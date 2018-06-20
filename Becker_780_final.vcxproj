@@ -81,15 +81,10 @@
     <None Include="Button_library.ino">
       <FileType>CppCode</FileType>
     </None>
-    <None Include="Global_Variables.ino">
-      <FileType>CppCode</FileType>
-    </None>
     <None Include="LCD_library.ino">
       <FileType>CppCode</FileType>
     </None>
-    <None Include="TDA7300.ino">
-      <FileType>CppCode</FileType>
-    </None>
+    <None Include="TDA7300.ino" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Visual Micro\.Becker_780_final.vsarduino.h" />
@@ -100,7 +95,7 @@
   </ImportGroup>
   <ProjectExtensions>
     <VisualStudio>
-      <UserProperties arduino.upload.port="COM4" />
+      <UserProperties arduino.upload.port="COM6" />
     </VisualStudio>
   </ProjectExtensions>
 </Project>

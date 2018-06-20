@@ -78,7 +78,6 @@ typedef void *__builtin_va_list;
 #include "Becker_780_final.ino"
 #include "Bluetooth.ino"
 #include "Button_library.ino"
-#include "Global_Variables.ino"
 #include "LCD_library.ino"
 #include "TDA7300.ino"
 #endif
