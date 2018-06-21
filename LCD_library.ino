@@ -1,3 +1,5 @@
+volatile uint32_t DLEN2_time = millis();
+
 /** Interrupt trigger when radio wants to update LCD */
 void ISR_ReadCBUS(void)
 {

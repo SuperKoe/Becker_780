@@ -66,30 +66,33 @@
 #define Mode_Cassette  0x42
 #define Mode_Bluetooth 0x43
 
-uint32_t elapsedSince(uint32_t since, uint32_t now)
-{
-	return (since < now) ? now - since : 0;
-}
+/* Cassette settings */
+bool Cassette_play = false;
+uint8_t Cassette_Button = 0;
+uint32_t Cassette_timeout = millis();
 
-uint32_t elapsedSince(uint32_t since)
-{
-	return elapsedSince(since, micros());
-}
+/* Infrared settings */
+decode_results results;
+uint16_t LastIRcode;
+uint32_t IR_Timeout = millis();
+
+//byte RadioMode = Mode_Bluetooth;
+byte RadioMode = Mode_FM;
 
 /* Setting up the classes */
 IRrecv irrecv(IR_PIN); // This library is heavyly modded to save memory and space. Stock should work.
 
 /* Button settings */
-uint8_t Button = 0xFF; // store the button that is pushed. 255 no button pushed
+uint8_t Button_Value = 0xFF; // store the button that is pushed. 255 no button pushed
 volatile uint8_t ButtonReceived = 0;
 volatile boolean Button_pushed = false;
 
 /* LCD settings                    0             1             2             3             4             5             6            7             8            9     */
 //const uint8_t Cijfers[10][2] = {{0x7e, 0x03}, {0x06, 0x02}, {0x2a, 0x25}, {0x0e, 0x05}, {0x46, 0x24}, {0x4c, 0x25}, {0x6c, 0x25}, {0x6, 0x01}, {0x6e, 0x25}, {0x4e, 0x25}};
 const uint8_t Cijferplek[5] = { 3, 1, 0, 10, 9 };
-uint8_t LCD_Radiodata[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+uint8_t LCD_Radiodata[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }; // The date shown on the screen
 volatile uint8_t LCD_packet = 0;
-volatile uint32_t DLEN2_time = millis();
+
 char LongText[20]; // custom tekst to display
 uint8_t Textroll = 0;
 
@@ -225,24 +228,20 @@ FLASH_TABLE(uint8_t, font_table, 2,
 	{ 0x00, 0x00 }, // 126 ~
 	{ 0x00, 0x00 });// 127 DEL
 
-/* Cassette settings */
-bool Cassette_play = false;
-uint8_t Cassette_Button = 0;
-uint32_t Cassette_timeout = millis();
+uint32_t elapsedSince(uint32_t since, uint32_t now)
+{
+	return (since < now) ? now - since : 0;
+}
 
-//byte RadioMode = Mode_Bluetooth;
-byte RadioMode = Mode_FM;
+uint32_t elapsedSince(uint32_t since)
+{
+	return elapsedSince(since, micros());
+}
 
-int getal = 0;
-uint32_t time;
-
-decode_results results;
-uint16_t LastIRcode;
-uint32_t IR_Timeout = millis();
-
-bool IRBalance = false;
+/*temp vars here*/
+uint32_t time; //temp alive text
+bool IRBalance = false; //???? temp...
 uint8_t IRControl = 0;
-
 
 void setup()
 {
@@ -423,11 +422,11 @@ void loop()
 		pinMode(SCL_CLB_PIN, OUTPUT);
 		pinMode(SDA_DATA_PIN, OUTPUT);
 		Setup_button();
-		Button = Read_button(); // Read the button
+		Button_Value = Read_button(); // Read the button
 		pinMode(SCL_CLB_PIN, INPUT);
 		pinMode(SDA_DATA_PIN, INPUT);
 		Button_pushed = false; //Only 1 time.
-		if (Button == 0xFF && digitalRead(INT_IN_PIN) == LOW)
+		if (Button_Value == 0xFF && digitalRead(INT_IN_PIN) == LOW)
 		{
 			Serial.println("OFF detected");
 			RadioMode = Mode_FM;
@@ -435,7 +434,7 @@ void loop()
 			delay(50); //OFF is very slow
 			digitalWrite(INT_OUT_PIN, HIGH);
 		}
-		switch (Button)
+		switch (Button_Value)
 		{
 		case BUTTON_volplus:
 		case BUTTON_volmin:
@@ -443,15 +442,16 @@ void loop()
 			digitalWrite(INT_OUT_PIN, HIGH);
 			break;
 		}
-		if (Button != 0xFF)
+		if (Button_Value != 0xFF)
 		{
-			Serial.println(Button, HEX);
+			Serial.println(Button_Value, HEX);
 		}
 	}
 
 	//temporary use
 	if (Serial.available() > 0)
 	{
+		int getal = 0;
 		char incomingByte = Serial.read();
 		if ((incomingByte >= 48) && (incomingByte <= 57))
 		{
@@ -502,14 +502,14 @@ void loop()
 	if (micros() - time > 1000000) //test to see if im alive 650
 	{
 		Serial.println(time / 1000, DEC);
-		if (strlen(LongText) > 5 && (RadioMode == Mode_Bluetooth || IRControl > 0))
+		if (strlen(LongText) > 5 && (RadioMode == Mode_Bluetooth || IRControl > 0)) // IRcontroll????
 		{
 			WriteText(LongText, true);
 
 		}
 		time = micros();
 	}
-	if (LCD_packet == 4)
+	if (LCD_packet == 4) // DO NOT REMOVE; 
 	{
 		LCD_packet = 0;
 		if (IRBalance)
