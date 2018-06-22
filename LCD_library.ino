@@ -3,61 +3,64 @@ volatile uint32_t DLEN2_time = millis();
 /** Interrupt trigger when radio wants to update LCD */
 void ISR_ReadCBUS(void)
 {
-	noInterrupts();
-	uint8_t start = 10;
-	uint8_t data[4];
-	uint8_t bytecount = 0;
-	uint8_t bincount = 0;
-	uint8_t latch;
-	bool success = false;
-	uint32_t time1 = micros();
-	//while (digitalRead(DLEN1) == HIGH)
-	while ((PIND & B00000100) && (elapsedSince(time1) < 10000)) //10 ms TIMEOUT else it will never end
+	if (RadioMode != Mode_Bluetooth)
 	{
-		_ReadCBUS(start, data, latch, bytecount, bincount, success);
-	}
-	if (success)
-	{
-		for (uint8_t i = 0; i < 4; i++)
+		/*noInterrupts();
+		uint8_t start = 10;
+		uint8_t data[4];
+		uint8_t bytecount = 0;
+		uint8_t bincount = 0;
+		uint8_t latch;
+		bool success = false;
+		uint32_t time1 = micros();
+		//while (digitalRead(DLEN1) == HIGH)
+		while ((PIND & B00000100) && (elapsedSince(time1) < 10000)) //10 ms TIMEOUT else it will never end
 		{
-			LCD_Radiodata[i + (latch * 4)] = data[i];
-			data[i] = 0;
-		}
-		LCD_packet++;
-
-		start = 10;
-		bytecount = 0;
-		bincount = 0;
-		latch = 10;
-		success = false;
-		time1 = micros();
-		//while (digitalRead(DLEN1) == LOW && !success)
-		while (!(PIND & B00000100) && !success && (elapsedSince(time1) < 10000)) //6 ms TIMEOUT else it will never end
-		{
-			//time1 = micros();
-			if (start > 1)
-			{
-				//while (digitalRead(SCL_CLB) == HIGH ); // skip one clockcycle
-				while ((PINC & B00100000));// timout is not needed here
-				//while (digitalRead(SCL_CLB) == LOW );
-				while (!(PINC & B00100000));
-			}
 			_ReadCBUS(start, data, latch, bytecount, bincount, success);
 		}
 		if (success)
 		{
 			for (uint8_t i = 0; i < 4; i++)
 			{
-				LCD_Radiodata[i + 8 + (latch * 4)] = data[i];
+				LCD_Radiodata[i + (latch * 4)] = data[i];
 				data[i] = 0;
 			}
 			LCD_packet++;
-		}
+
+			start = 10;
+			bytecount = 0;
+			bincount = 0;
+			latch = 10;
+			success = false;
+			time1 = micros();
+			//while (digitalRead(DLEN1) == LOW && !success)
+			while (!(PIND & B00000100) && !success && (elapsedSince(time1) < 10000)) //6 ms TIMEOUT else it will never end
+			{
+				//time1 = micros();
+				if (start > 1)
+				{
+					//while (digitalRead(SCL_CLB) == HIGH ); // skip one clockcycle
+					while ((PINC & B00100000));// timout is not needed here
+					//while (digitalRead(SCL_CLB) == LOW );
+					while (!(PINC & B00100000));
+				}
+				_ReadCBUS(start, data, latch, bytecount, bincount, success);
+			}
+			if (success)
+			{
+				for (uint8_t i = 0; i < 4; i++)
+				{
+					LCD_Radiodata[i + 8 + (latch * 4)] = data[i];
+					data[i] = 0;
+				}
+				LCD_packet++;
+			}
+		}*/
 	}
-	//for (uint8_t i = 0; i < 16; i++)
-	//{
-	   // Serial.println(LCD_Radiodata[i]);
-	//}
+	else
+	{
+		LCD_updated = true;
+	}
 	//interrupts();
 }
 
@@ -67,7 +70,7 @@ void ISR_DLEN2FREE()
 	DLEN2_time = micros();
 }
 
-/* Private function */
+/* Private function 
 void _ReadCBUS(uint8_t &start, uint8_t* data, uint8_t &latch, uint8_t &bytecount, uint8_t &bincount, bool &success)
 {
 	uint8_t b = digitalRead(SDA_DATA_PIN);
@@ -99,7 +102,7 @@ void _ReadCBUS(uint8_t &start, uint8_t* data, uint8_t &latch, uint8_t &bytecount
 		counter = 0;
 		while (!(PINC & B00100000) && counter < 1000) counter++;
 	}
-}
+}*/
 
 /**
 *	Write to LCD display using Bitbang. 

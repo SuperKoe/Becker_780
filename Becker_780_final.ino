@@ -1,15 +1,7 @@
 #include <I2cMaster.h> // Software I2C library (bitbang)
 #include <IRremote.h> // InfraRed Recive library, its very hackd for small size.
 #include <Flash.h> // Function to store array in Flash memory (PROGMEM)
-
-/* setup parms for the PinChangeInt */
-#define NO_PORTB_PINCHANGES
-#define NO_PORTC_PINCHANGES
-//#define NO_PORTD_PINCHANGES
-#define NO_PIN_ARDUINO
-#define NO_PIN_STATE
-#define DISABLE_PCINT_MULTI_SERVICE
-#include <PinChangeInt.h> // Pinchange interrupt library
+#include "PinChangeInterrupt.h" // Enables Pinchange
 
 /* all the arduino pins defined */
 #define SDA_DATA_PIN	18 //(A4)i2c for the buttons shared bit CBUS; SDA and SCL but be on the same PORT (PORTC, PORTB etc)
@@ -76,7 +68,6 @@ decode_results results;
 uint16_t LastIRcode;
 uint32_t IR_Timeout = millis();
 
-//byte RadioMode = Mode_Bluetooth;
 byte RadioMode = Mode_FM;
 
 /* Setting up the classes */
@@ -89,11 +80,11 @@ volatile boolean Button_pushed = false;
 
 /* LCD settings                    0             1             2             3             4             5             6            7             8            9     */
 //const uint8_t Cijfers[10][2] = {{0x7e, 0x03}, {0x06, 0x02}, {0x2a, 0x25}, {0x0e, 0x05}, {0x46, 0x24}, {0x4c, 0x25}, {0x6c, 0x25}, {0x6, 0x01}, {0x6e, 0x25}, {0x4e, 0x25}};
-const uint8_t Cijferplek[5] = { 3, 1, 0, 10, 9 };
-uint8_t LCD_Radiodata[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }; // The date shown on the screen
-volatile uint8_t LCD_packet = 0;
+const uint8_t Segment_Pos[5] = { 3, 1, 0, 10, 9 }; // posistion of the LCD segments
+//uint8_t LCD_Radiodata[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }; // The date shown on the screen
+//volatile uint8_t LCD_packet = 0;
 
-char LongText[20]; // custom tekst to display
+char LongText[20]; // custom text to display
 uint8_t Textroll = 0;
 
 /*ASCII fonts for the LCD stored in PROGMEM
@@ -242,6 +233,9 @@ uint32_t elapsedSince(uint32_t since)
 uint32_t time; //temp alive text
 bool IRBalance = false; //???? temp...
 uint8_t IRControl = 0;
+bool LCD_updated = false;
+bool LCD_writing = false;
+
 
 void setup()
 {
@@ -262,15 +256,16 @@ void setup()
 	pinMode(CC_REW_PIN, INPUT);
 	pinMode(CC_DETECT_PIN, INPUT);
 
+	attachInterrupt(digitalPinToInterrupt(DLEN1_PIN), ISR_ReadCBUS, RISING); // INT for when the LCD display is updated
+	//PCintPort::attachInterrupt(INT_IN_PIN, &ISR_ButtonPushed, CHANGE); // PCINT for when a button is pushed
+	attachInterrupt(digitalPinToInterrupt(INT_IN_PIN), ISR_ButtonPushed, CHANGE);
 
-	attachInterrupt(0, ISR_ReadCBUS, RISING); // INT for when the LCD display is updated
-	//attachInterrupt(1, ButtonPushed, CHANGE);
-	PCintPort::attachInterrupt(INT_IN_PIN, &ISR_ButtonPushed, CHANGE); // PCINT for when a button is pushed
-	PCintPort::attachInterrupt(DLEN2_PIN, &ISR_DLEN2FREE, CHANGE); //LCD display update is done.
+	//PCintPort::attachInterrupt(DLEN2_PIN, &ISR_DLEN2FREE, CHANGE); //LCD display update is done.
+	attachPinChangeInterrupt(digitalPinToPinChangeInterrupt(DLEN2_PIN), ISR_DLEN2FREE, CHANGE);
 
 	irrecv.enableIRIn(); // IR remote. Using INT1
 
-	Serial.begin(115200);
+	Serial.begin(19200);
 	Serial.println("start");
 }
 //-----------------------------------------------------------------------------------------------------------------------------------------------
@@ -417,6 +412,15 @@ void loop()
 		// TODO: bluetooth serial AT-COMMANDS handle
 	}
 
+	if (LCD_updated)
+	{
+		
+		//WriteText(LongText, true);
+		//Serial.println("LCD update");	
+		//delay(50);
+		//LCD_updated = false;
+	}
+
 	if (Button_pushed) // I want to handle the button input (interrupt). Mode_Bluetooth
 	{
 		pinMode(SCL_CLB_PIN, OUTPUT);
@@ -438,7 +442,7 @@ void loop()
 		{
 		case BUTTON_volplus:
 		case BUTTON_volmin:
-			digitalWrite(INT_OUT_PIN, LOW); //this works whoaaa~!!!
+			digitalWrite(INT_OUT_PIN, LOW); //this works whoaaa~!!! ERROR found keep increasu volume, radio sends new tda7300 command.
 			digitalWrite(INT_OUT_PIN, HIGH);
 			break;
 		}
@@ -446,6 +450,7 @@ void loop()
 		{
 			Serial.println(Button_Value, HEX);
 		}
+		delay(200);
 	}
 
 	//temporary use
@@ -463,7 +468,8 @@ void loop()
 			{
 			case 65: //A
 				RadioMode = Mode_AM;
-				TDA7300(Mode_AM);
+				Send_button_radio(BUTTON_7);
+				//TDA7300(RadioMode);
 				break;
 			case 67: //C
 				RadioMode = Mode_Cassette;
@@ -471,13 +477,13 @@ void loop()
 				break; // R
 			case 82: //(R radio)  
 				RadioMode = Mode_FM;
-				WriteCBUS(LCD_Radiodata);
-				TDA7300(Mode_FM);
+				Send_button_radio(BUTTON_1);
+				//TDA7300(Mode_FM);
 				break;
 			case 66: // (B BT)          
 				WriteText(" BT");
 				RadioMode = Mode_Bluetooth;
-				TDA7300(Mode_Bluetooth);
+				TDA7300(RadioMode);
 				break;
 			case 90: //Z test          
 			  //Send_button_radio(getal);
@@ -501,15 +507,15 @@ void loop()
 
 	if (micros() - time > 1000000) //test to see if im alive 650
 	{
-		Serial.println(time / 1000, DEC);
-		if (strlen(LongText) > 5 && (RadioMode == Mode_Bluetooth || IRControl > 0)) // IRcontroll????
+		//Serial.println(time / 1000, DEC);
+		if (strlen(LongText) > 0 && (RadioMode == Mode_Bluetooth || IRControl > 0)) // IRcontroll????
 		{
 			WriteText(LongText, true);
 
 		}
 		time = micros();
 	}
-	if (LCD_packet == 4) // DO NOT REMOVE; 
+	/*if (LCD_packet == 4) // DO NOT REMOVE; 
 	{
 		LCD_packet = 0;
 		if (IRBalance)
@@ -521,7 +527,7 @@ void loop()
 	//    for (int i = 0; i < 16; i++) {
 	//      Serial.println(LCD_Radiodata[i], DEC);
 	//    }
-	}
+	}*/
 }
 
 void WriteText(char* text)
@@ -540,7 +546,9 @@ void WriteText(char* text)
  */
 void WriteText(char* text, bool scroll)
 {
-	uint8_t LCD_data[16] = { 0, 0, LCD_Radiodata[2], 0, 0, 0, LCD_Radiodata[6], 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+	LCD_writing = true;
+	//uint8_t LCD_data[16] = { 0, 0, LCD_Radiodata[2], 0, 0, 0, LCD_Radiodata[6], 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+	uint8_t LCD_data[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 	char t[5] = { 0, 0, 0, 0, 0 };
 
 	if (strlen(text) > 5 && strlen(text) < 20)
@@ -605,11 +613,12 @@ void WriteText(char* text, bool scroll)
 	{
 		//if (font_table[t[i]][0] > 0 || font_table[t[i]][1] > 0)
 		//{
-		LCD_data[Cijferplek[i]] = font_table[t[i]][0];
-		LCD_data[Cijferplek[i] + 4] = font_table[t[i]][1];
+		LCD_data[Segment_Pos[i]] = font_table[t[i]][0];
+		LCD_data[Segment_Pos[i] + 4] = font_table[t[i]][1];
 		//}
 	}
 	WriteCBUS(LCD_data);
+	LCD_writing = false;
 }
 
 uint8_t IRButton_Seek(uint16_t button)

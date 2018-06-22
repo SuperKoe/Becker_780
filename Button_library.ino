@@ -14,7 +14,7 @@ volatile uint8_t *_BPIN, *_BPORT, *_BDDR;
 	Info: pinMode(INT_8574, INPUT); 12k resitor over INT_8574 and +5v to counter pseudo.
 	This works, the radio wont die do not change anymore.
  */
-void ISR_ButtonPushed()
+void ISR_ButtonPushed(void)
 {
 	if (digitalRead(INT_IN_PIN) == HIGH)
 	{
@@ -134,6 +134,15 @@ uint8_t Button_SeekState(uint8_t received)
  */
 void Send_button_radio(uint8_t sendButton)
 {
+	_SDA_BIT = digitalPinToBitMask(SDA_DATA_PIN); //Get the pinbit using arduino library
+	_SCL_BIT = digitalPinToBitMask(SCL_CLB_PIN); //Get the pinbit using arduino library
+	//_INT_OUT = digitalPinToBitMask(INT_OUT_PIN);
+	uint8_t port = digitalPinToPort(SDA_DATA_PIN);
+	_BPIN = portInputRegister(port); //same only PIN.
+	_BPORT = portOutputRegister(port);
+	_BDDR = portModeRegister(port);
+	//_IPORT = portOutputRegister(digitalPinToPort(INT_OUT_PIN));
+
 	noInterrupts();
 	uint8_t b = 0;
 	//uint8_t ButtonHex = Button_SeekHEX(sendButton); // Convert my number to the number(HEX) the radio wants
