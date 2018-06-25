@@ -1,12 +1,107 @@
+/* Becker 780 car radio mod for adding bluetooth and other stuff to this radio.
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in
+* all copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+* THE SOFTWARE.
+*/
+
 SoftI2cMaster i2c(SDA_DATA_PIN, SCL_CLB_PIN); // TODO: WIRE or SoftI2CMaster for speed?
 const uint8_t PCF8574addr = 0x20; //address PCF8574 i2c
 const uint8_t Buttonstate[6] = { 0xFF, 0xFF, 0xEF, 0xDF, 0xBF, 0x7F }; // write cycle to read the buttons
 const uint8_t ButtonstatePIN5[6] = { HIGH, LOW, HIGH, HIGH, HIGH, HIGH }; //cycle for PIN5
 
+/* Button settings */
+uint8_t Button_Value = 0xFF; // store the button that is pushed. 255 no button pushed
+volatile uint8_t ButtonReceived = 0;
+volatile boolean Button_pushed = false;
+
+/* Cassette settings */
+bool Cassette_play = false;
+uint8_t Cassette_Button = 0;
+uint32_t Cassette_timeout = millis();
+
+//PORT BITS
 uint8_t _SDA_BIT, _SCL_BIT;
 //uint8_t _INT_OUT;
 volatile uint8_t *_BPIN, *_BPORT, *_BDDR;
 //volatile uint8_t *_IPORT;
+
+void Handle_Buttons()
+{
+	if (Button_pushed) // I want to handle the button input (interrupt). Mode_Bluetooth
+	{
+		pinMode(SCL_CLB_PIN, OUTPUT);
+		pinMode(SDA_DATA_PIN, OUTPUT);
+		Setup_button();
+		Button_Value = Read_button(); // Read the button
+		pinMode(SCL_CLB_PIN, INPUT);
+		pinMode(SDA_DATA_PIN, INPUT);
+		Button_pushed = false; //Only 1 time.
+		if (Button_Value == 0xFF && digitalRead(INT_IN_PIN) == LOW)
+		{
+			Serial.println("OFF detected");
+			RadioMode = Mode_FM;
+			digitalWrite(INT_OUT_PIN, LOW); //this works whoaaa~!!!
+			delay(50); //OFF i s very slow
+			digitalWrite(INT_OUT_PIN, HIGH);
+		}
+		switch (Button_Value)
+		{
+		case BUTTON_volplus:
+		case BUTTON_volmin:
+			digitalWrite(INT_OUT_PIN, LOW); //this works whoaaa~!!! ERROR found keep increasu volume, radio sends new tda7300 command.
+			digitalWrite(INT_OUT_PIN, HIGH);
+			break;
+		}
+		if (Button_Value != 0xFF)
+		{
+			Serial.println(Button_Value, HEX);
+		}
+		delay(200);
+	}
+}
+
+void Handle_CassetteButtons()
+{
+	if (CassettePushed()) // Check if cassette button has been pushed
+	{
+		switch (Cassette_Button)
+		{
+		case BTN_EJECT:
+			Serial.println("BTN_EJECT");
+			break;
+		case BTN_1_2:
+			Serial.println("BTN_1_2");
+			break;
+		case BTN_CR:
+			Serial.println("BTN_CR");
+			break;
+		case BTN_REW:
+			Serial.println("BTN_REW");
+			break;
+		case BTN_FOR:
+			Serial.println("BTN_FOR");
+			break;
+		case BTN_B_C:
+			Serial.println("BTN_B_C");
+			break;
+		}
+	}
+}
 
 /**
 	Interrupt CHANGE trigger when a button is pushed on radio.
@@ -192,7 +287,7 @@ void _Write_PFC_data(uint8_t data)
 	*_BDDR &= ~_SDA_BIT; // INPUT
 	*_BPORT &= ~_SDA_BIT; // i dont want pullup
 }
-//-----------------------------------------------------------------------------------------------------------------------------------------------
+
 /** Private funcion Reads the byte from the i2c bus.
  *
  *  \return The byte read from the I2C bus.
@@ -219,13 +314,13 @@ uint8_t _Read_PFC_data()
 	*_BDDR &= ~_SDA_BIT; // INPUT
 	return b; // SCL is HIGH here
 }
-//-----------------------------------------------------------------------------------------------------------------------------------------------
+
 /** Private funcion */
 void _Overrule_PFC_address()
 {
 	_Overrule_PFC_address(false);
 }
-//-----------------------------------------------------------------------------------------------------------------------------------------------
+
 /** Private funcion I need to send my own button code to the radio. With this the PFC8574 doesnt not respond, because i changed the adres from 0x20 to 0x22
  *
  *  \param[in] sendint Set to True to untrigger the interrupt
@@ -280,8 +375,6 @@ void _Overrule_PFC_address(bool sendint)
 	}
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------
-
 /** Checks if a button on the cassetteplayer has been pushed. Some timing and checking is done to avoind multiple triggers
  *
  * \return True if cassettebutton has been pushed
@@ -291,7 +384,7 @@ bool CassettePushed()
 	if (!Cassette_play)
 	{
 		uint8_t cc = PINB >> 2;
-		if (cc != 15 && (Cassette_Button != cc || (millis() - Cassette_timeout > 400)))
+		if (cc != 15 && (Cassette_Button != cc || (elapsedSince(Cassette_timeout) > 400)))
 		{
 			Cassette_Button = cc;
 			Cassette_timeout = millis();

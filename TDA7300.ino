@@ -1,3 +1,24 @@
+/* Becker 780 car radio mod for adding bluetooth and other stuff to this radio.
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in
+* all copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+* THE SOFTWARE.
+*/
+
 /* TDA7300 Settings */
 SoftI2cMaster i2cTDA(TDA_SDA_PIN, TDA_SCL_PIN); // The TDA7300 seems only to work with SoftI2cMaster.
 const uint8_t TDAaddr = 0x88; //i2c address for the TDA7300 chip.
@@ -34,6 +55,7 @@ void TDA7300(uint8_t data)
 	//  if (i != 8) // skip last LOW pulse, i mis my periode
 	 //    while (!(PIND & B10000000));
 	 //}
+
 	// in theory i have the BUS free at this point
 	delayMicroseconds(500); // wait a while to make sure the bus is free.
 	//timeSDA = micros();
