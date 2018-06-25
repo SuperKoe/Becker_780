@@ -1,4 +1,3 @@
-# Becker-780
 Becker 780 BE0780 car radio with Bluetooth 
 
 I am Roland Wiersma from the Netherlands alias SuperCow.
@@ -7,7 +6,8 @@ I have made some libraries for it, Lego Power function Sender and receiver, ATTi
 
 This project is about car radio from the 80's the Becker 780.
 The idea is to add modern functionality, an Bluetooth connection to a smartphone.
-But keeping all existing rad function, the FM, AM and cassette player.
+But keeping all existing radio function, the FM, AM and cassette player.
+
 With the Bluetooth, using de HFP and A2DP profiles it is possible to stream music and using car-kit hands free calling.
 
 After 4 years I decided to continue with this project. 

@@ -15,18 +15,14 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Becker_780_final.ino" />
     <None Include="LCD_library.ino" />
     <None Include="Button_library.ino" />
-    <None Include="TDA7300.ino" />
-    <None Include="Global_Variables.ino" />
     <None Include="Bluetooth.ino" />
+    <None Include="TDA7300.ino" />
+    <None Include="Becker_780.ino" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Visual Micro\.Becker_780_final.vsarduino.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="__vm\.Becker_780_final.vsarduino.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
