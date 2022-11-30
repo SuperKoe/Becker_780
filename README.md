@@ -20,5 +20,8 @@ I have an tendency to MIA, so I I’ll try GitHub to make my code public.
 The code now publisted is back from 2014, its really dirty in alpha stage.
 
 ![uitleg](Img/Becker_uitleg.jpg "Overview")<<<<<<< HEAD
+<<<<<<< HEAD
+![uitleg](Img/Becker_uitleg.jpg "Overview")
+=======
 ![uitleg](Img/Becker uitleg.jpg "Overview")
 >>>>>>> ba9dae3821b3ee09db45e360b20709744b4aa76a
