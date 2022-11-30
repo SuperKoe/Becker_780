@@ -1,6 +1,6 @@
 Becker 780 BE0780 car radio with Bluetooth 
 
-I am Roland Wiersma from the Netherlands alias SuperCow.
+I am R.Wiersma from the Netherlands alias SuperCow.
 In the last 10 years I’ve done some fun projects with an Arduino.
 I have made some libraries for it, Lego Power function Sender and receiver, ATTiny84 core and ATCAN128 with fully CAN-bus support for the Arduino.
 
