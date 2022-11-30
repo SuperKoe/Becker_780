@@ -19,7 +19,6 @@ I made back then a demonstration: https://www.youtube.com/watch?v=7wbGRcMYx9w
 I have an tendency to MIA, so I I’ll try GitHub to make my code public.
 The code now publisted is back from 2014, its really dirty in alpha stage.
 
-![uitleg](Img/Becker_uitleg.jpg "Overview")<<<<<<< HEAD
 <<<<<<< HEAD
 ![uitleg](Img/Becker_uitleg.jpg "Overview")
 =======
